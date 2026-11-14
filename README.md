@@ -22,5 +22,7 @@ Projekt koncepcyjny do portfolio – fikcyjna marka
 
 ## Lighthouse
 
-Wyniki i zrzuty generuje polecenie node audit.mjs lub workflow „Audyt interfejsu”. Pomiar oczekuje na uruchomienie.
+<!-- AUDIT:START -->
+Pomiar oczekuje na wykonanie przez workflow „Audyt interfejsu”.
+<!-- AUDIT:END -->
 

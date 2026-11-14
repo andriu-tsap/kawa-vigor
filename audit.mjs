@@ -1,5 +1,6 @@
 import { chromium } from 'playwright';
 import lighthouse from 'lighthouse';
+import desktop from 'lighthouse/core/config/desktop-config.js';
 import { launch } from 'chrome-launcher';
 import http from 'node:http';
 import fs from 'node:fs/promises';
@@ -39,16 +40,19 @@ try {
       await page.close();
     }
   } finally { await browser.close(); }
-  const chrome = await launch({chromeFlags:['--headless','--no-sandbox']});
+  const chrome = await launch({chromePath:chromium.executablePath(),chromeFlags:['--headless','--no-sandbox']});
   try {
     const rows = [];
     for (const [name,width,height] of views) {
-      const config = name === 'desktop' ? {extends:'lighthouse:default',settings:{formFactor:'desktop',screenEmulation:{mobile:false,width,height,deviceScaleFactor:1,disabled:false}}} : undefined;
+      const config = name === 'desktop' ? desktop : undefined;
       const {lhr} = await lighthouse(url,{port:chrome.port,logLevel:'error',onlyCategories:['performance','accessibility','best-practices','seo']},config);
       rows.push([name,...Object.values(lhr.categories).map(category => Math.round(category.score*100))]);
     }
     const table = '| Tryb | Wydajność | Dostępność | Dobre praktyki | SEO |\n| --- | ---: | ---: | ---: | ---: |\n' + rows.map(row => '| ' + row.join(' | ') + ' |').join('\n') + '\n';
     await fs.writeFile('screenshots/lighthouse.md',table);
     console.log(table);
+    const readme = await fs.readFile('README.md','utf8');
+    await fs.writeFile('README.md',readme.replace(/<!-- AUDIT:START -->[\s\S]*?<!-- AUDIT:END -->/,'<!-- AUDIT:START -->\n'+table+'<!-- AUDIT:END -->'));
+    await fs.appendFile(process.env.GITHUB_STEP_SUMMARY || 'screenshots/lighthouse-summary.md',table);
   } finally { await chrome.kill(); }
 } finally { server.close(); }
